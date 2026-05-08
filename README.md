@@ -2,6 +2,14 @@
 
 A modern and responsive Todo application built with React and Material UI. The app allows users to efficiently manage their daily tasks with a clean and simple user interface.
 
+## 🌐 Live Demo
+[Click Here](https://sherift911.github.io/Loan-Eligibility-Form/)
+
+## 📸 Preview
+
+![todo-app-react-mui](images/site.png)
+
+
 ## 🚀 Features
 
 - Add new tasks
