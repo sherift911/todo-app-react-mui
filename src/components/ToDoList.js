@@ -4,6 +4,7 @@ import "../css/main.css";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import CardContent from "@mui/material/CardContent";
+import { ToastContext } from "../contexts/ToastContext.js";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import ToDo from "./ToDo";
@@ -16,8 +17,14 @@ import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@mui/material/styles";
 
 // hooks
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useMemo } from "react";
 //theme
+// dialog import
+import DialogTitle from "@mui/material/DialogTitle";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
 
 export default function ToDoList() {
   //data
@@ -26,14 +33,46 @@ export default function ToDoList() {
   // start states
   const [titleInput, setTitleInput] = useState("");
   const [todosType, setTodosType] = useState("all");
+  const [showDelete, setShowDelete] = useState(false);
+  const [showUpdate, setShowUpdate] = useState(false);
+  const [selectedTodo, setSelectedTodo] = useState({ title: "", details: "" });
+  const [updateTodo, setUpdateTodo] = useState({
+    title: selectedTodo.title,
+    details: "",
+  });
+  useEffect(() => {
+    setUpdateTodo({ title: selectedTodo.title, details: "" });
+  }, [selectedTodo]);
+  const { toastFn } = useContext(ToastContext);
   // end states
+
+  // send setShowDelete
+  function sendShowDelete() {
+    setShowDelete(true);
+  }
+  // send selectedTodo
+  function selectedTodoSend(todo) {
+    setSelectedTodo(todo);
+  }
+  // send show update
+  function ShowUpdateSend() {
+    setShowUpdate(true);
+  }
   // start filteration arrays
-  const completedArray = todos.filter((e) => {
-    return e.isCompleted !== false;
-  });
-  const notCompletedArray = todos.filter((e) => {
-    return e.isCompleted !== true;
-  });
+  // start completedArray
+  const completedArray = useMemo(() => {
+    return todos.filter((e) => {
+      return e.isCompleted !== false;
+    });
+  }, [todos]);
+  // end completedArray
+  // start not completedArray
+  const notCompletedArray = useMemo(() => {
+    return todos.filter((e) => {
+      return e.isCompleted !== true;
+    });
+  }, [todos]);
+  // end not completedArray
   // end filteration arrays
   //start render data
   let toBeRender = todos;
@@ -46,7 +85,15 @@ export default function ToDoList() {
   }
   // render
   const todoList = toBeRender.map((e) => {
-    return <ToDo key={e.id} todo={e} />;
+    return (
+      <ToDo
+        key={e.id}
+        todo={e}
+        showDelete={sendShowDelete}
+        selectedTodo={selectedTodoSend}
+        showUpdate={ShowUpdateSend}
+      />
+    );
   });
   // render
   //end render data
@@ -65,11 +112,11 @@ export default function ToDoList() {
     // storing new array without useEffect
     localStorage.setItem("todos", JSON.stringify(updateTD));
     setTitleInput("");
+    toastFn("تمت الاضافة بنجاح");
   }
   // start get data from localStorage
   // start useEffect
   useEffect(() => {
-    console.log("useEffect test");
     const storageTD = JSON.parse(localStorage.getItem("todos")) ?? [];
     setTodos(storageTD);
   }, []);
@@ -79,118 +126,239 @@ export default function ToDoList() {
     setTodosType(event.target.value);
   }
   const theme = useTheme();
+  function handleCloseDialog() {
+    setShowDelete(false);
+  }
+  function handleDelete() {
+    const updateTd = todos.filter((e) => {
+      // if (e.id === todo.id) {
+      //   return false;
+      // } else {
+      //   return true;
+      // }
+      // shortcut
+      return e.id !== selectedTodo.id;
+    });
+    setTodos(updateTd);
+    localStorage.setItem("todos", JSON.stringify(updateTd));
+    handleCloseDelete();
+    toastFn("تم الحذف بنجاح");
+  }
+  function handleCloseUpdate() {
+    setShowUpdate(false);
+  }
+  function handleCloseDelete() {
+    setShowDelete(false);
+  }
+  function handleUpdateConfirm() {
+    const updatedTodo = todos.map((e) => {
+      if (e.id === selectedTodo.id) {
+        return { ...e, title: updateTodo.title, details: updateTodo.details };
+      } else {
+        return e;
+      }
+    });
+    setTodos(updatedTodo);
+    localStorage.setItem("todos", JSON.stringify(updatedTodo));
+    handleCloseUpdate();
+    toastFn("تم التعديل بنجاح");
+  }
+
   return (
-    <Container maxWidth="md" style={{ textAlign: "center" }}>
-      <Card
-        sx={{ minWidth: 275 }}
-        style={{ maxHeight: "80vh", overflow: "scroll" }}
+    <>
+      {/* start delete dialog */}
+      <Dialog
+        open={showDelete}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+        style={{ direction: "rtl" }}
       >
-        <CardContent>
-          <Typography
-            variant="h1"
-            sx={{
-              fontSize: "60px",
-              marginBottom: "-10px",
-              fontWeight: "bold",
-              textAlign: "center",
-            }}
-          >
-            مهامي
-          </Typography>
-          <Divider
-            variant="middle"
-            style={{ height: "2px", backgroundColor: "gray" }}
-          />
-          {/* start buttons */}
-          <ToggleButtonGroup
-            value={todosType}
-            exclusive
-            onChange={typeChange}
-            aria-label="text alignment"
-            style={{
-              marginTop: "35px",
-              borderTop: "1px solid black",
-              borderBottom: "1px solid black",
-              direction: "ltr",
-            }}
-            color="primary"
-          >
-            <ToggleButton
-              value="non_completed"
-              style={{
-                borderLeft: "1px solid black",
-                fontWeight: "bold",
-                fontSize: "20px",
-              }}
-            >
-              غير منجز
-            </ToggleButton>
-            <ToggleButton
-              value="completed"
-              style={{
-                borderLeft: "1px solid black",
-                fontWeight: "bold",
-                fontSize: "20px",
-              }}
-            >
-              منجز
-            </ToggleButton>
-            <ToggleButton
-              value="all"
-              style={{
-                borderLeft: "1px solid black",
-                borderRight: "1px solid black",
-                fontWeight: "bold",
-                fontSize: "20px",
-              }}
-            >
-              الكل
-            </ToggleButton>
-          </ToggleButtonGroup>
-          {/* end buttons */}
-          {/* start todos */}
-          {todoList}
-          {/* end todos */}
-          {/* start input + Add button */}
-          <Grid container spacing={3} sx={{ marginTop: "25px" }}>
-            <Grid size={9} style={{}}>
+        <DialogTitle id="alert-dialog-title">
+          {"هل انت متأكد من رغبتك فى هذة المهمة ؟"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            لا يمكن التراجع عن الحذف فى حال اختيار زر الحذف
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={handleCloseDialog}>
+            اغلاق
+          </Button>
+          <Button onClick={handleDelete}>نعم قم بالحذف</Button>
+        </DialogActions>
+      </Dialog>
+      {/* end delete dialog */}
+      {/* start update dialog */}
+      <Dialog
+        open={showUpdate}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+        style={{ direction: "rtl" }}
+      >
+        <DialogTitle id="alert-dialog-title">{"تعديل المهمة"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            <form id="subscription-form">
+              {/* start first input */}
               <TextField
-                style={{
-                  width: "100%",
-                }}
-                id="outlined-basic"
-                label="عنوان المهمة"
-                variant="outlined"
-                value={titleInput}
+                autoFocus
+                required
+                margin="dense"
+                id="title_1"
+                name="details_1"
+                label="العنوان"
+                type="text"
+                fullWidth
+                variant="standard"
+                value={updateTodo.title}
                 onChange={(event) => {
-                  setTitleInput(event.target.value);
+                  setUpdateTodo({ ...updateTodo, title: event.target.value });
                 }}
-                color="primary"
               />
-            </Grid>
-            <Grid size={3} style={{}}>
-              <Button
-                className="addButton"
-                variant="contained"
+              {/* start first input */}
+              {/* start second input */}
+              <TextField
+                autoFocus
+                required
+                margin="dense"
+                id="title_2"
+                name="details_2"
+                label="التفاصيل"
+                type="text"
+                fullWidth
+                variant="standard"
+                value={updateTodo.details}
+                onChange={(event) => {
+                  setUpdateTodo({ ...updateTodo, details: event.target.value });
+                }}
+              />
+              {/* end second input */}
+            </form>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={handleCloseUpdate}>
+            الغاء
+          </Button>
+          <Button onClick={handleUpdateConfirm}> تعديل </Button>
+        </DialogActions>
+      </Dialog>
+      {/* end update dialog */}
+      <Container maxWidth="md" style={{ textAlign: "center" }}>
+        <Card
+          sx={{ minWidth: 275 }}
+          style={{ maxHeight: "80vh", overflow: "scroll" }}
+        >
+          <CardContent>
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: "60px",
+                marginBottom: "-10px",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              مهامي
+            </Typography>
+            <Divider
+              variant="middle"
+              style={{ height: "2px", backgroundColor: "gray" }}
+            />
+            {/* start buttons */}
+            <ToggleButtonGroup
+              value={todosType}
+              exclusive
+              onChange={typeChange}
+              aria-label="text alignment"
+              style={{
+                marginTop: "35px",
+                borderTop: "1px solid black",
+                borderBottom: "1px solid black",
+                direction: "ltr",
+              }}
+              color="primary"
+            >
+              <ToggleButton
+                value="non_completed"
                 style={{
-                  height: "100%",
-                  width: "100%",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  backgroundColor: theme.palette.primary.main,
+                  borderLeft: "1px solid black",
+                  fontWeight: "bold",
+                  fontSize: "20px",
                 }}
-                onClick={() => {
-                  handleAddClick();
-                }}
-                disabled={titleInput.length <= 0 ? true : false}
               >
-                اضـــــــافة
-              </Button>
+                غير منجز
+              </ToggleButton>
+              <ToggleButton
+                value="completed"
+                style={{
+                  borderLeft: "1px solid black",
+                  fontWeight: "bold",
+                  fontSize: "20px",
+                }}
+              >
+                منجز
+              </ToggleButton>
+              <ToggleButton
+                value="all"
+                style={{
+                  borderLeft: "1px solid black",
+                  borderRight: "1px solid black",
+                  fontWeight: "bold",
+                  fontSize: "20px",
+                }}
+              >
+                الكل
+              </ToggleButton>
+            </ToggleButtonGroup>
+            {/* end buttons */}
+            {/* start todos */}
+            {todoList}
+            {/* end todos */}
+            {/* start input + Add button */}
+            <Grid container spacing={3} sx={{ marginTop: "25px" }}>
+              <Grid size={9} style={{}}>
+                <TextField
+                  style={{
+                    width: "100%",
+                  }}
+                  id="outlined-basic"
+                  label="عنوان المهمة"
+                  variant="outlined"
+                  value={titleInput}
+                  onChange={(event) => {
+                    setTitleInput(event.target.value);
+                  }}
+                  color="primary"
+                />
+              </Grid>
+              <Grid size={3} style={{}}>
+                <Button
+                  className="addButton"
+                  variant="contained"
+                  style={{
+                    height: "100%",
+                    width: "100%",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    backgroundColor: theme.palette.primary.main,
+                  }}
+                  onClick={() => {
+                    handleAddClick();
+                  }}
+                  disabled={titleInput.length <= 0 ? true : false}
+                >
+                  اضـــــــافة
+                </Button>
+              </Grid>
             </Grid>
-          </Grid>
-          {/* end input + Add button */}
-        </CardContent>
-      </Card>
-    </Container>
+            {/* end input + Add button */}
+          </CardContent>
+        </Card>
+      </Container>
+    </>
   );
 }

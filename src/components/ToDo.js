@@ -4,6 +4,7 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import { ToDoContext } from "../contexts/ToDoContext";
+import { ToastContext } from "../contexts/ToastContext.js";
 //hooks
 import { useContext } from "react";
 import { useState } from "react";
@@ -15,23 +16,9 @@ import CreateIcon from "@mui/icons-material/Create";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckIcon from "@mui/icons-material/Check";
 
-// dialog import
-import DialogTitle from "@mui/material/DialogTitle";
-import Dialog from "@mui/material/Dialog";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-
-export default function ToDo({ todo }) {
-  const [showDelete, setShowDelete] = useState(false);
-  const [showUpdate, setShowUpdate] = useState(false);
+export default function ToDo({ todo, showDelete, selectedTodo, showUpdate }) {
   const { todos, setTodos } = useContext(ToDoContext);
-  const [updateTodo, setUpdateTodo] = useState({
-    title: todo.title,
-    details: "",
-  });
+  const { toastFn } = useContext(ToastContext);
 
   // start event handlers
   function hanleClickCheck() {
@@ -43,131 +30,23 @@ export default function ToDo({ todo }) {
     });
     setTodos(newTD);
     localStorage.setItem("todos", JSON.stringify(newTD));
+    toastFn("تم التعديل بنجاح");
   }
 
-  function handleDeleteDialog() {
-    setShowDelete(true);
+  function handleDeleteDialog(todo) {
+    selectedTodo(todo);
+    showDelete(true);
   }
-  function handleCloseDialog() {
-    setShowDelete(false);
-  }
-  function handleDelete() {
-    const updateTd = todos.filter((e) => {
-      // if (e.id === todo.id) {
-      //   return false;
-      // } else {
-      //   return true;
-      // }
 
-      // shortcut
-      return e.id !== todo.id;
-    });
-    setTodos(updateTd);
-    localStorage.setItem("todos", JSON.stringify(updateTd));
+  function handleUpdateClick(todo) {
+    selectedTodo(todo);
+    showUpdate(true);
   }
-  function handleUpdateClick() {
-    setShowUpdate(true);
-  }
-  function handleCloseUpdate() {
-    setShowUpdate(false);
-  }
-  function handleUpdateConfirm() {
-    const updatedTodo = todos.map((e) => {
-      if (e.id === todo.id) {
-        return { ...e, title: updateTodo.title, details: updateTodo.details };
-      } else {
-        return e;
-      }
-    });
-    setTodos(updatedTodo);
-    localStorage.setItem("todos", JSON.stringify(updatedTodo));
-    handleCloseUpdate();
-  }
+
   // end event handlers
 
   return (
     <>
-      {/* start delete dialog */}
-      <Dialog
-        open={showDelete}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        role="alertdialog"
-        style={{ direction: "rtl" }}
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"هل انت متأكد من رغبتك فى هذة المهمة ؟"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            لا يمكن التراجع عن الحذف فى حال اختيار زر الحذف
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button autoFocus onClick={handleCloseDialog}>
-            اغلاق
-          </Button>
-          <Button onClick={handleDelete}>نعم قم بالحذف</Button>
-        </DialogActions>
-      </Dialog>
-      {/* end delete dialog */}
-      {/* start update dialog */}
-      <Dialog
-        open={showUpdate}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        role="alertdialog"
-        style={{ direction: "rtl" }}
-      >
-        <DialogTitle id="alert-dialog-title">{"تعديل المهمة"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            <form id="subscription-form">
-              {/* start first input */}
-              <TextField
-                autoFocus
-                required
-                margin="dense"
-                id="title_1"
-                name="details_1"
-                label="العنوان"
-                type="text"
-                fullWidth
-                variant="standard"
-                value={updateTodo.title}
-                onChange={(event) => {
-                  setUpdateTodo({ ...updateTodo, title: event.target.value });
-                }}
-              />
-              {/* start first input */}
-              {/* start second input */}
-              <TextField
-                autoFocus
-                required
-                margin="dense"
-                id="title_2"
-                name="details_2"
-                label="التفاصيل"
-                type="text"
-                fullWidth
-                variant="standard"
-                value={updateTodo.details}
-                onChange={(event) => {
-                  setUpdateTodo({ ...updateTodo, details: event.target.value });
-                }}
-              />
-              {/* end second input */}
-            </form>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button autoFocus onClick={handleCloseUpdate}>
-            الغاء
-          </Button>
-          <Button onClick={handleUpdateConfirm}> تعديل </Button>
-        </DialogActions>
-      </Dialog>
-      {/* end update dialog */}
       <Card
         className="todo-card"
         sx={{
@@ -244,7 +123,10 @@ export default function ToDo({ todo }) {
               </IconButton>
               {/* end check button */}
               {/* start modified button */}
-              <IconButton className="icon-button" onClick={handleUpdateClick}>
+              <IconButton
+                className="icon-button"
+                onClick={() => handleUpdateClick(todo)}
+              >
                 <CreateIcon
                   className="icon"
                   style={{
@@ -260,7 +142,10 @@ export default function ToDo({ todo }) {
               </IconButton>
               {/* end modified button */}
               {/* start delete button */}
-              <IconButton className="icon-button" onClick={handleDeleteDialog}>
+              <IconButton
+                className="icon-button"
+                onClick={() => handleDeleteDialog(todo)}
+              >
                 <DeleteIcon
                   className="icon"
                   style={{
