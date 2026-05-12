@@ -11,11 +11,11 @@ import ToDo from "./ToDo";
 import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import { useTodos } from "../contexts/ToDoContext";
 import { ToDoContext } from "../contexts/ToDoContext";
 //others
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@mui/material/styles";
-
 // hooks
 import { useState, useContext, useEffect, useMemo } from "react";
 //theme
@@ -27,8 +27,8 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 
 export default function ToDoList() {
-  //data
-  const { todos, setTodos } = useContext(ToDoContext);
+  // custom hook reducer data
+  const { todos, dispatch } = useTodos(ToDoContext);
 
   // start states
   const [titleInput, setTitleInput] = useState("");
@@ -99,26 +99,14 @@ export default function ToDoList() {
   //end render data
   // start handles
   function handleAddClick() {
-    const newTodo = {
-      id: uuidv4(),
-      title: titleInput,
-      details: "",
-      isCompleted: false,
-    };
-    // end handles
-    const updateTD = [...todos, newTodo];
-    setTodos(updateTD);
-    // local storge
-    // storing new array without useEffect
-    localStorage.setItem("todos", JSON.stringify(updateTD));
+    dispatch({ type: "added", payload: { title: titleInput } });
     setTitleInput("");
     toastFn("تمت الاضافة بنجاح");
   }
   // start get data from localStorage
   // start useEffect
   useEffect(() => {
-    const storageTD = JSON.parse(localStorage.getItem("todos")) ?? [];
-    setTodos(storageTD);
+    dispatch({ type: "get" });
   }, []);
   // end useEffects
   // end get data from localStorage
@@ -130,19 +118,9 @@ export default function ToDoList() {
     setShowDelete(false);
   }
   function handleDelete() {
-    const updateTd = todos.filter((e) => {
-      // if (e.id === todo.id) {
-      //   return false;
-      // } else {
-      //   return true;
-      // }
-      // shortcut
-      return e.id !== selectedTodo.id;
-    });
-    setTodos(updateTd);
-    localStorage.setItem("todos", JSON.stringify(updateTd));
     handleCloseDelete();
     toastFn("تم الحذف بنجاح");
+    dispatch({ type: "deleted", payload: { selectedTodo: selectedTodo } });
   }
   function handleCloseUpdate() {
     setShowUpdate(false);
@@ -151,17 +129,9 @@ export default function ToDoList() {
     setShowDelete(false);
   }
   function handleUpdateConfirm() {
-    const updatedTodo = todos.map((e) => {
-      if (e.id === selectedTodo.id) {
-        return { ...e, title: updateTodo.title, details: updateTodo.details };
-      } else {
-        return e;
-      }
-    });
-    setTodos(updatedTodo);
-    localStorage.setItem("todos", JSON.stringify(updatedTodo));
     handleCloseUpdate();
     toastFn("تم التعديل بنجاح");
+    dispatch({ type: "modified", payload: { selectedTodo, updateTodo } });
   }
 
   return (

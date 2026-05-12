@@ -7,7 +7,7 @@ import { ToDoContext } from "../contexts/ToDoContext";
 import { ToastContext } from "../contexts/ToastContext.js";
 //hooks
 import { useContext } from "react";
-import { useState } from "react";
+import { useTodos } from "../contexts/ToDoContext";
 // style
 import "../css/main.css";
 
@@ -17,20 +17,13 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CheckIcon from "@mui/icons-material/Check";
 
 export default function ToDo({ todo, showDelete, selectedTodo, showUpdate }) {
-  const { todos, setTodos } = useContext(ToDoContext);
+  const { todos, dispatch } = useTodos(ToDoContext);
   const { toastFn } = useContext(ToastContext);
 
   // start event handlers
   function hanleClickCheck() {
-    const newTD = todos.map((e) => {
-      if (e.id === todo.id) {
-        e.isCompleted = !e.isCompleted;
-      }
-      return e;
-    });
-    setTodos(newTD);
-    localStorage.setItem("todos", JSON.stringify(newTD));
     toastFn("تم التعديل بنجاح");
+    dispatch({ type: "check", payload: { todo: todo } });
   }
 
   function handleDeleteDialog(todo) {

@@ -1,12 +1,9 @@
 import ToDoList from "./components/ToDoList";
-import { ToastContext } from "./contexts/ToastContext.js";
 import ToastProvider from "./contexts/ToastContext.js";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { red, green } from "@mui/material/colors";
-import { ToDoContext } from "./contexts/ToDoContext";
+import { red } from "@mui/material/colors";
+import ToDoProvider from "./contexts/ToDoContext.js";
 // hooks
-import { useState } from "react";
-
 // style
 import "./css/main.css";
 
@@ -50,28 +47,25 @@ const initialTodo = [
 ];
 
 function App() {
-  // states
-  const [todos, setTodos] = useState(initialTodo);
-
   return (
     <ThemeProvider theme={theme}>
-      <ToastProvider>
-        <div
-          className="App"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100vh",
-            backgroundColor: "#000000e0",
-            direction: "rtl",
-          }}
-        >
-          <ToDoContext.Provider value={{ todos: todos, setTodos: setTodos }}>
+      <ToDoProvider>
+        <ToastProvider>
+          <div
+            className="App"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100vh",
+              backgroundColor: "#000000e0",
+              direction: "rtl",
+            }}
+          >
             <ToDoList />
-          </ToDoContext.Provider>
-        </div>
-      </ToastProvider>
+          </div>
+        </ToastProvider>
+      </ToDoProvider>
     </ThemeProvider>
   );
 }
